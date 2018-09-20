@@ -1,0 +1,8 @@
+﻿  emg-data-sample.cpp
+c:\users\tobyw\onedrive\1a\documents\github\myoemgdetermination\include\myo\cxx\detail\throwonerror.hpp(39): warning C4297: 'myo::ThrowOnError::~ThrowOnError': function assumed not to throw an exception but does
+  c:\users\tobyw\onedrive\1a\documents\github\myoemgdetermination\include\myo\cxx\detail\throwonerror.hpp(39): note: destructor or deallocator has a (possibly implicit) non-throwing exception specification
+c:\users\tobyw\onedrive\1a\documents\github\myoemgdetermination\include\myo\cxx\detail\throwonerror.hpp(46): warning C4297: 'myo::ThrowOnError::~ThrowOnError': function assumed not to throw an exception but does
+  c:\users\tobyw\onedrive\1a\documents\github\myoemgdetermination\include\myo\cxx\detail\throwonerror.hpp(46): note: destructor or deallocator has a (possibly implicit) non-throwing exception specification
+  emg-data-sample-VisualStudio2012.vcxproj -> C:\Users\Tobyw\OneDrive\1A\Documents\GitHub\MyoEmgDetermination\samples\x64\Debug\emg-data-sample.exe
+  Copy required dlls to output directory
+          1 file(s) copied.
