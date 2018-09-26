@@ -23,12 +23,22 @@
 
 using namespace std;
 
-int track = 0;
-double threshold = 12.0;
-const int interval = 38;
+const int interval = 500;
+
+int track;
+int tracker;
+double threshold;
 int tot[interval + 5][8];
-int triggercount = 0;
-bool lasttriggered = false;
+int triggercount;
+bool lasttriggered;
+bool triggerPattern[3];
+int triggerPatternTail;
+int doubleFlexCount;
+int changeCounter; // counts # of changes after last double flex
+
+bool hasDebounced;
+bool isActive;
+
 //muscle cell action potential lasts about 2-5m
 
 class DataCollector : public myo::DeviceListener {
@@ -70,9 +80,24 @@ public:
 			tot[track][i] = abs(static_cast<int>(emgSamples[i]));
         }
 		track++;
+		tracker++;
 		emgFile << std::endl;
 		
     }
+
+	bool checkDoubleFlex() {
+		if (triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 1)] && !triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 2)] && triggerPattern[findIndexInTriggerPattern(triggerPatternTail - 3)])
+			return true;
+		
+		return false;
+	}
+
+	int findIndexInTriggerPattern(int index){
+		if (index >= 0) return index;
+		else {
+			return 3 + index;
+		}
+	}
 
     // There are other virtual functions in DeviceListener that we could override here, like onAccelerometerData().
     // For this example, the functions overridden above are sufficient.
@@ -118,18 +143,43 @@ public:
 		}
 
 		//std::cout << std::endl;
-		
+
+
+
 		if (sum >= threshold) {
 			if (!lasttriggered) triggercount++;
 			std::cout << "TRIGGERED" << std::flush;
-			lasttriggered = true;
+			lasttriggered = 1;
 		}
 		else  {
 			std::cout << "NO ACTION" << std::flush;
-			lasttriggered = false;
+			lasttriggered = 0;
 		}
-		std::cout << "            trigger count: " << triggercount << flush;
-        std::cout << std::flush;
+
+
+		if (lasttriggered != triggerPattern[triggerPatternTail == 0 ? sizeof(triggerPattern) - 1 : (triggerPatternTail - 1)]) {
+			if (!hasDebounced) {
+				hasDebounced = true;
+				//cout << endl;
+				return;
+			}
+
+			isActive = true;
+
+			//cout << triggerPatternTail << " to " << lasttriggered;
+			triggerPattern[triggerPatternTail] = lasttriggered;
+			triggerPatternTail = (triggerPatternTail + 1) % sizeof(triggerPattern);
+			changeCounter++;
+			if (checkDoubleFlex() && changeCounter > 2) {
+				doubleFlexCount++;
+				changeCounter = 0;
+			}
+			hasDebounced = false;
+		}
+		//cout << "  " << triggerPatternTail << flush;
+
+		std::cout << /*"  trigger count: " << triggercount <<*/ "  double flex count: " << doubleFlexCount << " trigger pattern (debug): " << triggerPattern[0] << " " << triggerPattern[1] << " " << triggerPattern[2] << std::flush;
+		std::cout << std::flush;
     }
 
     // The values of this array is set by onEmgData() above.
@@ -139,8 +189,23 @@ public:
 
 int main(int argc, char** argv)
 {
-	//char * a;
+	track = 0;
+	threshold = 12.0;
+	tot[interval + 5][8];
+	triggercount = 0;
+	lasttriggered = false;
+	triggerPattern[0] = 0;
+	triggerPattern[1] = 0;
+	triggerPattern[2] = 0;
 
+	doubleFlexCount = 0;
+	triggerPatternTail = 1;
+	hasDebounced = 0;
+	isActive = 0;
+	changeCounter = 0;
+	hasDebounced = 0;
+
+	//char * a;
 	//system("capture.exe");
 	std::cout << "please input threshold as a number: ";
 	cin >> threshold;
@@ -160,7 +225,7 @@ int main(int argc, char** argv)
     // immediately.
     // waitForMyo() takes a timeout value in milliseconds. In this case we will try to find a Myo for 10 seconds, and
     // if that fails, the function will return a null pointer.
-    myo::Myo* myo = hub.waitForMyo(10000/20);
+    myo::Myo* myo = hub.waitForMyo(10000/50);
 
     // If waitForMyo() returned a null pointer, we failed to find a Myo, so exit with an error message.
     if (!myo) {
@@ -184,13 +249,29 @@ int main(int argc, char** argv)
     while (1) {
         // In each iteration of our main loop, we run the Myo event loop for a set number of milliseconds.
         // In this case, we wish to update our display 50 times a second, so we run for 1000/20 milliseconds.
-        hub.run(1000/20);
+        hub.run(1000/100);
         // After processing events, we call the print() member function we defined above to print out the values we've
         // obtained from any events that have occurred.
-		if (track ==  interval-1)
-			cout << "track == " << endl;
-			collector.print();
-			track = 0;
+
+
+		//Myo Sampling rate: 200 Hz
+		if (tracker == 600) {
+			changeCounter = 0;
+			
+			if (!isActive) {
+				triggerPatternTail = 1;
+				triggerPattern[0] = triggerPattern[2];
+				triggerPattern[1] = 0;
+				triggerPattern[2] = 0;
+			}
+
+			tracker = 0;
+			isActive = false;
+		}
+			
+		cout << "tracker: " << tracker << flush;
+		collector.print();
+		track = 0;
     }
 
     // If a standard exception occurred, we print out its message and exit.
