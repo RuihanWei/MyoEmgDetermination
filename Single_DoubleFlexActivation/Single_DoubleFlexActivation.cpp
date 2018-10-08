@@ -252,7 +252,7 @@ int main(int argc, char** argv)
 
 
 		//Myo Sampling rate: 200 Hz
-		if (tracker >= 600) {
+		if (tracker >= 2000) {
 			changeCounter = 0;
 			
 			if (!isActive) {
